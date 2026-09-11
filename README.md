@@ -1,6 +1,6 @@
 # LuqtaSDK for iOS
 
-Official iOS SDK for the [Luqta](https://github.com/MTayyaBH/luqta-ios-sdk) API — Add contests, quizzes, rewards, and gamification to your iOS app.
+Official iOS SDK for the [Luqta](https://github.com/FaziiHamza/luqta-ios-sdk) API — Add contests, quizzes, rewards, and gamification to your iOS app.
 
 [![CocoaPods](https://img.shields.io/cocoapods/v/LuqtaSDK.svg)](https://cocoapods.org/pods/LuqtaSDK)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
@@ -14,7 +14,7 @@ Official iOS SDK for the [Luqta](https://github.com/MTayyaBH/luqta-ios-sdk) API 
 ### CocoaPods
 
 ```ruby
-pod 'LuqtaSDK', '~> 1.1.1'
+pod 'LuqtaSDK', '~> 1.4.0'
 ```
 
 ### Swift Package Manager
@@ -22,14 +22,14 @@ pod 'LuqtaSDK', '~> 1.1.1'
 In Xcode: **File > Add Package Dependencies** and enter:
 
 ```
-https://github.com/MTayyaBH/luqta-ios-sdk
+https://github.com/FaziiHamza/luqta-ios-sdk
 ```
 
 Or add to `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/MTayyaBH/luqta-ios-sdk", from: "1.1.1")
+    .package(url: "https://github.com/FaziiHamza/luqta-ios-sdk", from: "1.4.0")
 ]
 ```
 
@@ -209,6 +209,18 @@ try await client.levels.complete(levelId, data: ["qrData": "scanned-content"])
 // Complete an image level
 try await client.levels.completeWithImage(levelId, imageUrl: "https://...")
 
+// Complete a client_webhook level — dedicated endpoint, not complete(_:data:)
+try await client.levels.completeClientWebhook(levelId, variables: [
+    ["variable_name": "email", "data_type": "string", "value": "a@b.c"],
+    ["variable_name": "policy", "data_type": "boolean", "value": true],
+])
+
+// Complete a luqta_webhook level — marks the hosted flow as visited
+try await client.levels.complete(levelId, data: [
+    "luqta_webhook_url": level.luqtaWebhookUrl ?? "",
+    "visited": true,
+])
+
 // Mark level as in-progress
 try await client.levels.updateProgress(levelId)
 
@@ -386,6 +398,8 @@ Use these SwiftUI views in custom mode:
 | `QRLevelView` | QR code scanner level |
 | `LinkLevelView` | Link visit level |
 | `ImageLevelView` | Image upload level |
+| `ClientWebhookLevelView` | Client-webhook level — dynamic form |
+| `LuqtaWebhookLevelView` | Luqta-webhook level — participant id + link |
 | `AccessCodeSheet` | Private contest access code input |
 | `CongratulationDialog` | Animated completion celebration |
 | `LuqtaToast` | Toast notification |
@@ -497,7 +511,7 @@ do {
 
 ## Example App
 
-See the [example app](https://github.com/MTayyaBH/luqta-sdk/tree/main/examples/ios_example_swift) for a complete implementation with login, signup, and contest rendering.
+See the [example app](https://github.com/FaziiHamza/luqta-sdk/tree/main/examples/ios_example_swift) for a complete implementation with login, signup, and contest rendering.
 
 ## License
 
@@ -506,4 +520,4 @@ MIT License — See [LICENSE](LICENSE) for details.
 ## Support
 
 - Email: support@luqta.com
-- Issues: [GitHub Issues](https://github.com/MTayyaBH/luqta-ios-sdk/issues)
+- Issues: [GitHub Issues](https://github.com/FaziiHamza/luqta-ios-sdk/issues)

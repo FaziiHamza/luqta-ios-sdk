@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'LuqtaSDK'
-  s.version          = '1.4.0'
+  s.version          = '1.4.1'
   s.summary          = 'Official iOS SDK for Luqta API with pre-configured UI'
   s.description      = <<-DESC
 The official iOS SDK for Luqta API. Provides a complete pre-configured SwiftUI UI
@@ -12,8 +12,6 @@ Features:
 - Automatic validation of email and phone formats
 - Keychain storage for authentication tokens
 - QR code scanning and image upload
-- Geolocation / 3D AR treasure-hunt levels (engine bundled)
-- Webhook levels: dynamic client forms and Luqta-hosted flows
 - Full async/await support
 - RTL and localization support (EN/AR)
   DESC
@@ -43,7 +41,7 @@ SOFTWARE.
 LICENSE
   }
   s.author           = { 'Luqta' => 'support@luqta.com' }
-  s.source           = { :http => 'https://github.com/FaziiHamza/luqta-ios-sdk/releases/download/1.4.0/LuqtaSDK.xcframework.zip' }
+  s.source           = { :http => 'https://github.com/FaziiHamza/luqta-ios-sdk/releases/download/1.4.1/LuqtaSDK.xcframework.zip' }
   s.ios.deployment_target = '13.0'
   s.swift_version = '5.9'
   s.vendored_frameworks = 'LuqtaSDK.xcframework'

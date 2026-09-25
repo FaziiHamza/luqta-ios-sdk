@@ -14,7 +14,7 @@ Official iOS SDK for the [Luqta](https://github.com/FaziiHamza/luqta-ios-sdk) AP
 ### CocoaPods
 
 ```ruby
-pod 'LuqtaSDK', '~> 1.4.0'
+pod 'LuqtaSDK', '~> 1.5.0'
 ```
 
 ### Swift Package Manager
@@ -29,7 +29,7 @@ Or add to `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/FaziiHamza/luqta-ios-sdk", from: "1.4.0")
+    .package(url: "https://github.com/FaziiHamza/luqta-ios-sdk", from: "1.5.0")
 ]
 ```
 
@@ -203,11 +203,34 @@ try await client.levels.complete(levelId, data: ["textContent": "my answer"])
 // Complete a link level
 try await client.levels.complete(levelId, data: ["link": "https://example.com"])
 
-// Complete a QR level
-try await client.levels.complete(levelId, data: ["qrData": "scanned-content"])
+// Complete a QR level with whatever the scanner read (takes the uid route
+// when the text is an auto-completion link)
+try await client.levels.completeQrScan(levelId, scanned: scannedText)
 
-// Complete an image level
-try await client.levels.completeWithImage(levelId, imageUrl: "https://...")
+// Complete an image level — base64 data URI of a JPEG/PNG, at most 2 MB
+try await client.levels.completeWithImage(
+    levelId, imageUrl: "data:image/jpeg;base64,\(jpeg.base64EncodedString())"
+)
+
+// Survey: contest-wide questions, pick your level's block, submit answers.
+// A skipped optional question is simply left out.
+let survey = try await client.levels.getSurveyQuestions(contestId: contestId).forLevel(levelId)
+try await client.levels.submitSurvey(contestId: contestId, levelId: levelId, answers: [
+    SurveyAnswer(questionId: 12, selectedOptions: ["Yes"]),
+    SurveyAnswer(questionId: 14, answerText: "Loved it"),
+])
+
+// Link task: start the server-side dwell, then claim once it is served
+let start = try await client.levels.startLinkTask(levelId)   // LinkTaskStart
+try await client.levels.complete(levelId, data: ["link": start.taskUrl ?? ""])
+
+// QR auto-completion, from your deep-link handler after initializeUser
+let scan = try await client.levels.completeQrByUid(url.absoluteString)
+
+// Referrals: code to share, progress, and the friend's redeem
+let invite = try await client.referrals.share(levelId: levelId)
+let progress = try await client.referrals.progress(levelId: levelId)
+try await client.referrals.redeem(referralCode: try ReferralApi.parseCode(url.absoluteString))
 
 // Complete a client_webhook level — dedicated endpoint, not complete(_:data:)
 try await client.levels.completeClientWebhook(levelId, variables: [
@@ -306,6 +329,51 @@ let data = try await client.put("/endpoint", body: ["key": "value"])
 let data = try await client.delete("/endpoint")
 let data = try await client.patch("/endpoint", body: ["key": "value"])
 ```
+
+---
+
+## Level Types & Validation
+
+In preconfigured mode every level below plays with no wiring. Before any level
+opens, a contest that has not started, a level whose `start_date` is ahead, or
+one whose `level_timeline` has passed shows an "unavailable" dialog instead.
+Each type then checks what it can on the device; the server stays the authority,
+and its refusals are shown as localized copy (English and Arabic) by code.
+
+| Level type | `level_type` | Checked on the device | Server refusals mapped |
+|---|---|---|---|
+| Text | `text` | Answer is not blank | — |
+| QR | `qr` | Code is not blank | `INVALID_QR_CODE`, `NOT_A_QR_LEVEL`, `NOT_PARTICIPANT`, `LEVEL_NOT_STARTED`, `LEVEL_ENDED`, `LEVEL_ALREADY_COMPLETED` |
+| Link | `link` | The link actually opened before Submit is accepted | — |
+| Image | `image` | Camera present and permitted; resized to 1920 px, JPEG 85%, **≤ 2 MB** | — |
+| Quiz | `quiz` | Server-driven | — |
+| Client webhook | `client_webhook` | Every variable filled; `number` parses | — |
+| Luqta webhook | `luqta_webhook` | Hosted URL opened before Submit | — |
+| Survey | `survey`, `level_survey` | Required question blocks Next; `minimum_answers` (≥ 1) before Submit | `not_participant`, `level_already_completed`, `required_question_missing`, `below_minimum_answers`, `not_a_survey_level`, `answer_not_in_level` |
+| Link task | `link_task`, `level_link_task`, `linktask` | URL needs scheme + host; dwell ≥ 10 s; leaving restarts it | `link_not_started`, `link_timer_not_elapsed`, `level_not_started`, `level_ended`, `level_already_completed`, `not_participant` |
+| Referral | `referral`, `level_referral` | Code read from digits, spaced/dashed digits or a full link | `referral_unavailable`, `self_referral`, `already_redeemed`, `referral_limit_reached`, `referral_code_inactive`, `invalid_referral_code` |
+| Geolocation / AR | `level_geolocation` | Inside the point's radius before the camera opens | — |
+
+**Link task.** `link_open_mode: in_app` (the default) opens the page in an SDK
+WebView: the timer starts once the page has loaded and the claim is made on the
+page. `external` opens Safari. The server re-checks the elapsed time on claim.
+
+**Referral.** The SDK hands out an 8-digit code; your app owns the link, because
+it has to open *your* app:
+
+```swift
+LuqtaConfig(apiKey: "...", appId: "...",
+            referralLinkBuilder: { code in "https://myapp.example/invite?ref=\(code)" })
+```
+
+Redeem in your deep-link handler **after** sign-in and `initializeUser`.
+
+**QR auto-completion.** A printed code encodes a link carrying `levels.uid`;
+the phone's camera opens your app and `completeQrByUid` completes the level.
+Also after `initializeUser`. A scan never auto-joins a contest.
+
+Survey, link-task and referral levels end on the level-completed dialog, or the
+contest one when it was the last level.
 
 ---
 
@@ -511,7 +579,15 @@ do {
 
 ## Example App
 
-See the [example app](https://github.com/FaziiHamza/luqta-sdk/tree/main/examples/ios_example_swift) for a complete implementation with login, signup, and contest rendering.
+See the [example app](https://github.com/FaziiHamza/luqta-sdk/tree/main/examples/ios_example_swift): a generic demo host configured on the device (App ID, API key, Dev/Live, user identifier, branding, language), with sign-in, sign-up and the SDK's contests embedded and full screen.
+
+## What's New in 1.5.0
+
+Survey, link-task, referral and QR auto-completion levels; link tasks in an
+in-app page; intact image uploads; the detail page no longer empties after a
+join; brand colour on every button. **Breaking:** `startLinkTask` returns
+`LinkTaskStart` instead of `Int?`. Full notes in the
+[changelog](https://github.com/FaziiHamza/luqta-sdk/blob/main/ios-sdk-swift/CHANGELOG.md).
 
 ## License
 

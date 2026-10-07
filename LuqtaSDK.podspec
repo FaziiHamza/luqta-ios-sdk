@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'LuqtaSDK'
-  s.version          = '1.5.0'
+  s.version          = '1.6.0'
   s.summary          = 'Official iOS SDK for Luqta API with pre-configured UI'
   s.description      = <<-DESC
 The official iOS SDK for Luqta API. Provides a complete pre-configured SwiftUI UI
@@ -43,7 +43,7 @@ SOFTWARE.
 LICENSE
   }
   s.author           = { 'Luqta' => 'support@luqta.com' }
-  s.source           = { :http => 'https://github.com/FaziiHamza/luqta-ios-sdk/releases/download/1.5.0/LuqtaSDK.xcframework.zip' }
+  s.source           = { :http => 'https://github.com/FaziiHamza/luqta-ios-sdk/releases/download/1.6.0/LuqtaSDK.xcframework.zip' }
   s.ios.deployment_target = '13.0'
   s.swift_version = '5.9'
   s.vendored_frameworks = 'LuqtaSDK.xcframework'

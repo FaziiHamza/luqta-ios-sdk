@@ -14,7 +14,7 @@ Official iOS SDK for the [Luqta](https://github.com/FaziiHamza/luqta-ios-sdk) AP
 ### CocoaPods
 
 ```ruby
-pod 'LuqtaSDK', '~> 1.5.0'
+pod 'LuqtaSDK', '~> 1.6.0'
 ```
 
 ### Swift Package Manager
@@ -29,7 +29,7 @@ Or add to `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/FaziiHamza/luqta-ios-sdk", from: "1.5.0")
+    .package(url: "https://github.com/FaziiHamza/luqta-ios-sdk", from: "1.6.0")
 ]
 ```
 
@@ -119,9 +119,23 @@ struct ContestsView: View {
 - Level completion flows — Text, QR code, Link, Image upload
 - Quiz interface with timer and scoring
 - Congratulations screen with animations
-- Private contest access code entry
+- Private contest access code entry, with the backend's reason when a code is refused
+- Notifications bell and sheet for signed-in players
 - Pull-to-refresh and countdown timers
 - Full navigation and error handling
+
+A signed-in player is enrolled before a contest's detail opens, so they never
+see a Participate button; a player with no user token still does.
+
+### Open One Contest Directly
+
+If your app shows its own contest carousel, pass the tapped contest and the SDK
+opens on its detail instead of the full list. A private contest still meets its
+access-code gate.
+
+```swift
+client.render(initialContest: contest)
+```
 
 ### Session Restore (Skip Login on Relaunch)
 
@@ -292,9 +306,16 @@ let prizes = try await client.rewards.getPrizeHistory()
 
 ### Notifications API
 
+Needs a signed-in player (user token).
+
 ```swift
-// Get notifications
-let notifications = try await client.notifications.getAll()
+// Parsed, newest first
+let notifications = try await client.notifications.list()
+let title = notifications.first?.titleFor("ar")   // falls back to the default language
+let unread = notifications.filter { !$0.isRead }.count
+
+// Raw response
+let raw = try await client.notifications.getAll()
 
 // Mark as read
 try await client.notifications.markAsRead([id1, id2])
@@ -562,7 +583,7 @@ do {
 | `isSdkReady()` | SDK initialized? |
 | `isInitialized()` | User initialized? |
 | `clearUserToken()` | Logout user |
-| `render()` | Get preconfigured SwiftUI view |
+| `render(initialContest:)` | Get preconfigured SwiftUI view; pass a contest to open its detail |
 | `setBranding(branding)` | Update UI branding |
 | `setLocale(locale)` | Change language |
 | `setRtl(bool)` | Toggle RTL layout |
@@ -580,6 +601,17 @@ do {
 ## Example App
 
 See the [example app](https://github.com/FaziiHamza/luqta-sdk/tree/main/examples/ios_example_swift): a generic demo host configured on the device (App ID, API key, Dev/Live, user identifier, branding, language), with sign-in, sign-up and the SDK's contests embedded and full screen.
+
+## What's New in 1.6.0
+
+Notifications for signed-in players (a bell with an unread dot and a sheet in
+their locale), `client.notifications.list()`, `render(initialContest:)` to open
+one contest from your own carousel, and a single private-contest gate that no
+longer refuses good codes. **Breaking:** `LuqtaNotification` now matches the
+backend — `type`/`data` are gone, `createdAt` is a `Date?` from
+`createdAtMillis`, titles and messages have Arabic counterparts, and `isRead`
+comes from the player's `notification_log`. Full notes in the
+[changelog](https://github.com/FaziiHamza/luqta-sdk/blob/main/ios-sdk-swift/CHANGELOG.md).
 
 ## What's New in 1.5.0
 
